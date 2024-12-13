@@ -9,6 +9,7 @@
 #define NUM_ROWS 1027               // The number of rows in the file
 #define COLUMNS 3                   // The number of columns in each row
 #define LINE_WIDTH 100              // Maximum width of a line
+#define ASCII_MARKER 999            // Marker indicating the start of a new batch
 
 //Structure for our array
 struct DataRow 
@@ -25,6 +26,7 @@ void readFile(const char *filename, struct DataRow *dataArray, int numRows);
 void findAsciiData(struct DataRow *dataArray, int numRows, int asciiValue, int height, double xOffset, double yOffset);
 FILE* openTextFile(const char *filename);
 void processWordsFromFile(FILE *asciiFile, struct DataRow *dataArray, int numRows, int height, double *xOffset, double *yOffset);
+void processWord(struct DataRow *dataArray, int numRows, char *word, int height, double *xOffset, double yOffset);
 
 
 int main()
@@ -81,7 +83,11 @@ int main()
     // Call the new function to process words from the file
     processWordsFromFile(asciiFile, dataArray, NUM_ROWS, height, &xOffset, &yOffset);
 
+    // Close the text file
+    fclose(asciiFile);
 
+    // Free the allocated memory
+    free(dataArray);
 
     // Before we exit the program we need to close the COM port
     CloseRS232Port();
@@ -187,5 +193,64 @@ void processWordsFromFile(FILE *asciiFile, struct DataRow *dataArray, int numRow
 
         // Process each word
         processWord(dataArray, numRows, word, height, xOffset, *yOffset);
+    }
+}
+
+// Function to calculate the width of a word
+int calculateWordWidth(const char *word, int height) 
+{
+    int width = 0;
+    for (int i = 0; word[i] != '\0'; i++) 
+    {
+        if ((int)word[i] != 32) 
+        {
+            width += 18;
+        }
+    }
+    return (width / 18) * height;
+}
+
+// Function to process a single word
+void processWord(struct DataRow *dataArray, int numRows, char *word, int height, double *xOffset, double yOffset) 
+{
+    for (int i = 0; word[i] != '\0'; i++) 
+    {
+        int asciiValue = (int)word[i];  
+        findAsciiData(dataArray, numRows, asciiValue, height, *xOffset, yOffset);
+        *xOffset += (18.0 / 18.0) * height;
+    }
+
+    findAsciiData(dataArray, NUM_ROWS, 32, height, *xOffset, yOffset);
+    *xOffset += (18.0 / 18.0) * height;
+}
+
+// Function to find data for a specific ASCII value and send it to the robot
+void findAsciiData(struct DataRow *dataArray, int numRows, int asciiValue, int height, double xOffset, double yOffset) 
+{
+    
+    for (int i = 0; i < numRows; i++) 
+    {
+        if (dataArray[i].col1 == ASCII_MARKER && dataArray[i].col2 == asciiValue) 
+        {
+            for (int j = i + 1; j < numRows; j++) 
+            {
+                if (dataArray[j].col1 == ASCII_MARKER) 
+                {
+                    break;
+                }
+
+                double adjustedCol1 = (dataArray[j].col1 / 18.0) * height + xOffset;
+                double adjustedCol2 = (dataArray[j].col2 / 18.0) * height + yOffset;
+
+                const char *sValue = (dataArray[j].col3 == 1) ? "S1000" : "S0";
+                const char *gValue = (dataArray[j].col3 == 1) ? "G1" : "G0";
+
+                // Send adjusted data to the robot
+                char buffer[100];
+                sprintf(buffer, "%s\n%s X%.1f Y%.1f\n", sValue, gValue, adjustedCol1, adjustedCol2);
+                SendCommands(buffer);
+            }
+            break;
+        }
     }
 }
