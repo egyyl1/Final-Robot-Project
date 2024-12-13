@@ -59,14 +59,18 @@ int main()
     sprintf (buffer, "S0\n");
     SendCommands(buffer);
 
-// Allocate memory for NUM_ROWS rows using the new function
+    // Allocate memory for NUM_ROWS rows using the new function
     struct DataRow *dataArray = allocateMemoryForDataArray(NUM_ROWS);
 
     // Read the font data from the file
     readFile("SingleStrokeFont.txt", dataArray, NUM_ROWS);
 
+    // Ask the user for the height multiplier
+    int height = getHeightFromUser();  // Use the function to get the height
 
-// Before we exit the program we need to close the COM port
+
+
+    // Before we exit the program we need to close the COM port
     CloseRS232Port();
     printf("Com port now closed\n");
 
@@ -83,6 +87,7 @@ void SendCommands (char *buffer )
     Sleep(100); // Can omit this when using the writing robot but has minimal effect
     // getch(); // Omit this once basic testing with emulator has taken place
 }
+
 
 // All Functions
 
@@ -116,4 +121,23 @@ void readFile(const char *filename, struct DataRow *dataArray, int numRows)
     }
 
     fclose(inputFile);  // Close the file
+}
+
+// Function to prompt the user for a height value between 4 and 10
+int getHeightFromUser() 
+{
+    int height;
+    do 
+    {
+        printf("Enter a height value (between 4 and 10): ");
+        scanf("%d", &height);
+
+        if (height < 4 || height > 10) 
+        {
+            printf("Scale is out of limits. Please enter a value between 4 and 10.\n");
+        }
+    } 
+    while (height < 4 || height > 10);
+
+    return height;
 }
