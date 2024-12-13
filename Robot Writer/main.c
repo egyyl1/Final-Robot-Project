@@ -199,6 +199,12 @@ void processWordsFromFile(FILE *asciiFile, struct DataRow *dataArray, int numRow
     }
 }
 
+// Function to open a text file and read the next word (one at a time)
+int readNextWordFromFile(FILE *asciiFile, char *word) 
+{
+    return fscanf(asciiFile, "%s", word) == 1 ? 1 : 0;
+}
+
 // Function to calculate the width of a word
 int calculateWordWidth(const char *word, int height) 
 {
