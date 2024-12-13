@@ -8,6 +8,7 @@
 #define bdrate 115200               /* 115200 baud */
 #define NUM_ROWS 1027               // The number of rows in the file
 #define COLUMNS 3                   // The number of columns in each row
+#define LINE_WIDTH 100              // Maximum width of a line
 
 //Structure for our array
 struct DataRow 
@@ -22,8 +23,8 @@ void SendCommands (char *buffer );
 struct DataRow* allocateMemoryForDataArray(int numRows);  
 void readFile(const char *filename, struct DataRow *dataArray, int numRows);
 void findAsciiData(struct DataRow *dataArray, int numRows, int asciiValue, int height, double xOffset, double yOffset);
-FILE* openTextFile(const char *filename);  // Function prototype for opening text files
-
+FILE* openTextFile(const char *filename);
+void processWordsFromFile(FILE *asciiFile, struct DataRow *dataArray, int numRows, int height, double *xOffset, double *yOffset);
 
 
 int main()
@@ -71,6 +72,14 @@ int main()
 
     // Open the text file that contains words using the new function
     FILE *asciiFile = openTextFile("text.txt");
+
+    // Initialise xOffset to 0
+    double xOffset = 0.0;
+    // Start Y-offset at height
+    double yOffset = 0 - height;
+
+    // Call the new function to process words from the file
+    processWordsFromFile(asciiFile, dataArray, NUM_ROWS, height, &xOffset, &yOffset);
 
 
 
@@ -156,4 +165,27 @@ FILE* openTextFile(const char *filename)
         exit(EXIT_FAILURE);
     }
     return asciiFile;
+}
+
+// Function to process words from the file
+void processWordsFromFile(FILE *asciiFile, struct DataRow *dataArray, int numRows, int height, double *xOffset, double *yOffset) 
+{
+    char word[100];  // Buffer to store a word (assuming words are not longer than 100 characters)
+
+    // Read and process words one by one
+    while (readNextWordFromFile(asciiFile, word)) 
+    {
+        // Calculate the width of the word
+        int wordWidth = calculateWordWidth(word, height);
+
+        if (*xOffset + wordWidth > LINE_WIDTH) 
+        {
+            // Move to the next line
+            *xOffset = 0.0;
+            *yOffset -= ((36.0 / 18.0) * height); 
+        }   
+
+        // Process each word
+        processWord(dataArray, numRows, word, height, xOffset, *yOffset);
+    }
 }
