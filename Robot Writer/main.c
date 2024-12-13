@@ -22,6 +22,7 @@ void SendCommands (char *buffer );
 struct DataRow* allocateMemoryForDataArray(int numRows);  
 void readFile(const char *filename, struct DataRow *dataArray, int numRows);
 void findAsciiData(struct DataRow *dataArray, int numRows, int asciiValue, int height, double xOffset, double yOffset);
+FILE* openTextFile(const char *filename);  // Function prototype for opening text files
 
 
 
@@ -67,6 +68,9 @@ int main()
 
     // Ask the user for the height multiplier
     int height = getHeightFromUser();  // Use the function to get the height
+
+    // Open the text file that contains words using the new function
+    FILE *asciiFile = openTextFile("text.txt");
 
 
 
@@ -140,4 +144,16 @@ int getHeightFromUser()
     while (height < 4 || height > 10);
 
     return height;
+}
+
+// Function to open a text file and return a file pointer
+FILE* openTextFile(const char *filename) 
+{
+    FILE *asciiFile = fopen(filename, "r");
+    if (asciiFile == NULL)
+    {
+        perror("Error opening text file");
+        exit(EXIT_FAILURE);
+    }
+    return asciiFile;
 }
