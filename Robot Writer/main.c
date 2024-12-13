@@ -14,9 +14,9 @@
 //Structure for our array
 struct DataRow 
 {
-    int col1;
-    int col2;
-    int col3;
+    int col1;   // Represents X-coordinate or marker
+    int col2;   // Represents Y-coordinate or ASCII value
+    int col3;   // Indicates whether the pen is up (0) or down (1)
 };
 
 // Function prototypes
@@ -34,14 +34,14 @@ void processWord(struct DataRow *dataArray, int numRows, char *word, int height,
 
 int main()
 {
-    //char mode[]= {'8','N','1',0};
+    //Buffer to hold comments to be sent
     char buffer[100];
 
     // If we cannot open the port then give up immediately
     if ( CanRS232PortBeOpened() == -1 )
     {
         printf ("\nUnable to open the COM port (specified in serial.h) ");
-        exit (0);
+        exit (0);   // Used to exit the program as the port cannot be used
     }
 
     // Time to wake up the robot
@@ -136,7 +136,7 @@ void readFile(const char *filename, struct DataRow *dataArray, int numRows)
         exit(EXIT_FAILURE);
     }
 
-    // Read the rows of the file
+    // Read the rows of the file and populate the dataArray
     for (int i = 0; i < numRows; i++) 
     {
         fscanf(inputFile, "%d %d %d", &dataArray[i].col1, &dataArray[i].col2, &dataArray[i].col3);
@@ -191,7 +191,7 @@ void processWordsFromFile(FILE *asciiFile, struct DataRow *dataArray, int numRow
         {
             // Move to the next line
             *xOffset = 0.0;
-            *yOffset -= ((36.0 / 18.0) * height); 
+            *yOffset -= ((36.0 / 18.0) * height);   // Adjust Y-offset for new line
         }   
 
         // Process each word
@@ -209,52 +209,54 @@ int readNextWordFromFile(FILE *asciiFile, char *word)
 int calculateWordWidth(const char *word, int height) 
 {
     int width = 0;
-    for (int i = 0; word[i] != '\0'; i++) 
+    for (int i = 0; word[i] != '\0'; i++)   // Loop through each character in the word until the null terminator
     {
-        if ((int)word[i] != 32) 
+        if ((int)word[i] != 32) // If the character is not a space (ASCII 32)
         {
-            width += 18;
+            width += 18;    // Increment the width by a fixed value (18 units per character)
         }
     }
-    return (width / 18) * height;
+    return (width / 18) * height;   // Adjust the total width based on the specified height multiplier
+  
 }
 
 // Function to process a single word
 void processWord(struct DataRow *dataArray, int numRows, char *word, int height, double *xOffset, double yOffset) 
 {
-    for (int i = 0; word[i] != '\0'; i++) 
+    for (int i = 0; word[i] != '\0'; i++)   // Loop through each character in the word
     {
-        int asciiValue = (int)word[i];  
-        findAsciiData(dataArray, numRows, asciiValue, height, *xOffset, yOffset);
-        *xOffset += (18.0 / 18.0) * height;
+        int asciiValue = (int)word[i];  // Get the ASCII value of the current character
+        findAsciiData(dataArray, numRows, asciiValue, height, *xOffset, yOffset);   // Find and send drawing data for the character
+        *xOffset += (18.0 / 18.0) * height; // Move the x-offset forward for the next character
     }
 
     findAsciiData(dataArray, NUM_ROWS, 32, height, *xOffset, yOffset);
-    *xOffset += (18.0 / 18.0) * height;
+    *xOffset += (18.0 / 18.0) * height; // Adjust the x-offset for the space
 }
 
 // Function to find data for a specific ASCII value and send it to the robot
 void findAsciiData(struct DataRow *dataArray, int numRows, int asciiValue, int height, double xOffset, double yOffset) 
 {
-    
+     // Iterate through the data array to locate the marker and ASCII value
     for (int i = 0; i < numRows; i++) 
     {
-        if (dataArray[i].col1 == ASCII_MARKER && dataArray[i].col2 == asciiValue) 
+        if (dataArray[i].col1 == ASCII_MARKER && dataArray[i].col2 == asciiValue)   // Check if the marker matches the ASCII value
         {
             for (int j = i + 1; j < numRows; j++) 
             {
-                if (dataArray[j].col1 == ASCII_MARKER) 
+                if (dataArray[j].col1 == ASCII_MARKER)  // Stop if another marker is encountered
                 {
                     break;
                 }
-
+                 // Calculate adjusted X and Y coordinates based on height and offsets
                 double adjustedCol1 = (dataArray[j].col1 / 18.0) * height + xOffset;
                 double adjustedCol2 = (dataArray[j].col2 / 18.0) * height + yOffset;
 
+                // Determine the robot commands based on the pen state (col3 value)
                 const char *sValue = (dataArray[j].col3 == 1) ? "S1000" : "S0";
                 const char *gValue = (dataArray[j].col3 == 1) ? "G1" : "G0";
 
-                // Send adjusted data to the robot
+                // Send adjusted command to the robot
                 char buffer[100];
                 sprintf(buffer, "%s\n%s X%.1f Y%.1f\n", sValue, gValue, adjustedCol1, adjustedCol2);
                 SendCommands(buffer);
