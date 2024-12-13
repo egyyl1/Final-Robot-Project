@@ -21,11 +21,14 @@ struct DataRow
 
 // Function prototypes
 void SendCommands (char *buffer );
-struct DataRow* allocateMemoryForDataArray(int numRows);  
+struct DataRow* allocateMemoryForDataArray(int numRows); 
+int getHeightFromUser(); 
 void readFile(const char *filename, struct DataRow *dataArray, int numRows);
 void findAsciiData(struct DataRow *dataArray, int numRows, int asciiValue, int height, double xOffset, double yOffset);
 FILE* openTextFile(const char *filename);
 void processWordsFromFile(FILE *asciiFile, struct DataRow *dataArray, int numRows, int height, double *xOffset, double *yOffset);
+int readNextWordFromFile(FILE *asciiFile, char *word);
+int calculateWordWidth(const char *word, int height);
 void processWord(struct DataRow *dataArray, int numRows, char *word, int height, double *xOffset, double yOffset);
 
 
